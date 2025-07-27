@@ -11,6 +11,18 @@ user.get("/" , (req,res)=>{
 user.post('/register' , async (req,res)=>{
     try {
         const {name , email , password} = req.body;
+        
+        // Validate input
+        if (!name || !email || !password) {
+            return res.status(400).send({message: 'Name, email and password are required'});
+        }
+        
+        // Check if environment variables are configured
+        if (!process.env.JWT_SECRET || !process.env.SALT_ROUND) {
+            console.error('JWT_SECRET or SALT_ROUND environment variables are not defined');
+            return res.status(500).send({message: 'Server configuration error'});
+        }
+        
         const user = await UserModel.findOne({email});
         const hashedPassword = await bcrypt.hash(password, parseInt(process.env.SALT_ROUND))
         if(user){
@@ -23,14 +35,26 @@ user.post('/register' , async (req,res)=>{
             res.status(201).send({message:'User registered successfully',newUser,token});
         
     } catch (error) {
-        console.error('Error registering user', error.message);
-        res.status(500).send({message:'Internel server error'});
+        console.error('Error registering user:', error.message);
+        res.status(500).send({message:'Internal server error'});
     }
 });
 
 user.post('/login' , async (req,res)=>{
     try {
         const {email , password} = req.body;
+        
+        // Validate input
+        if (!email || !password) {
+            return res.status(400).send({message: 'Email and password are required'});
+        }
+        
+        // Check if JWT_SECRET is configured
+        if (!process.env.JWT_SECRET) {
+            console.error('JWT_SECRET environment variable is not defined');
+            return res.status(500).send({message: 'Server configuration error'});
+        }
+        
         const user = await UserModel.findOne({email});
         if(!user){
             return res.status(400).send({message:'User not found'});
@@ -41,11 +65,11 @@ user.post('/login' , async (req,res)=>{
         }
         const token = jwt.sign({userId : user._id}, process.env.JWT_SECRET , {expiresIn :'2h'});
         res.cookie('token' , token);
-        res.status(200).send({message:'Login succesfull',user,token})
+        res.status(200).send({message:'Login successful',user,token})
         
     } catch (error) {
-        console.error('Error Logging in user', error.message)
-        res.status(500).send({message:'Internel server error'});
+        console.error('Error logging in user:', error.message);
+        res.status(500).send({message:'Internal server error'});
     }
 });
 

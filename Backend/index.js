@@ -9,7 +9,7 @@ require('dotenv').config();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: 'https://realtimetodofrontend.vercel.app',
     credentials: true
 }));
 app.use(express.json());
@@ -21,6 +21,17 @@ app.get('/' , (req,res)=>{
     res.send('Hello world');
 });
 
+// Global error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).send({ message: 'Internal server error' });
+});
+
+// 404 handler for undefined routes - using a function instead of wildcard
+app.use((req, res) => {
+    res.status(404).send({ message: 'Route not found' });
+});
+
 
 
 
@@ -29,8 +40,9 @@ app.get('/' , (req,res)=>{
 app.listen(PORT, async ()=>{
     try {
         await connectDB();
-        console.log(`server is running on PORT ${PORT}`);
+        console.log(`Server is running on PORT ${PORT}`);
     } catch (error) {
-        console.log('Error starting server' , error.message)
+        console.error('Error starting server:', error.message);
+        process.exit(1); // Exit the process if database connection fails
     }
 })
